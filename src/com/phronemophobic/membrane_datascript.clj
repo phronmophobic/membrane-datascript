@@ -138,7 +138,7 @@
   "I don't do a whole lot ... yet."
   [& args]
 
-  (skia/run (make-app #'my-todo-app conn [{:todo-lists [:db/id
+  (skia/run-sync (make-app #'my-todo-app conn [{:todo-lists [:db/id
                                                         {:todos [:complete? :description :db/id]}]}
                                           '*]
                       1))
