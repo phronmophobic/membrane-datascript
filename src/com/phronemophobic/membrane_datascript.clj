@@ -30,17 +30,34 @@
 (defn e-by-av [db a v]
   (-> (d/datoms db :avet a v) first :e))
 
+(d/transact! conn
+             [
+              {:db/id 1
+               :todo-lists [{:todos [{:complete? false
+                                      :description "one"}
+                                     {:complete? false
+                                      :description "two"}
+                                     {:complete? true
+                                      :description "three"}]}
+                            {:todos [{:complete? false
+                                      :description "four"}
+                                     {:complete? false
+                                      :description "five"}
+                                     {:complete? true
+                                      :description "six"}]}
+                            {:todos [{:complete? false
+                                      :description "seven"}
+                                     {:complete? false
+                                      :description "eight"}
+                                     {:complete? true
+                                      :description "nine"}]}]}])
 
-(defn -main
-  "I don't do a whole lot ... yet."
-  [& args]
-  (println "Hello, World!"))
 
-(defui my-todo-app [& {:keys [todo-lists]}]
+(defui my-todo-app [{:keys [todo-lists]}]
   (apply
    ui/vertical-layout
    (for [todos todo-lists]
-     (td/todo-app :todos (:todos todos)))))
+     (td/todo-app {:todos (:todos todos)}))))
 
 
 (defn make-datascript-handler [conn query eid]
@@ -51,15 +68,6 @@
        (case type
          :update
          (let [[path f & args ] args]
-           
-           ;; use transform* over transform for graalvm.
-           ;; since the specs are dynamic, I don't think there's any benefit to the
-           ;; macro anyway
-
-           ;; (prn path (path->datalog schema path ))
-           
-           
-           
            (let [data (spec/transform* (component/path->spec path)
                                        (fn [& spec-args]
                                          (apply f (concat spec-args
@@ -69,9 +77,6 @@
              (d/transact! conn [data])))
          :set
          (let [[path v] args]
-           ;; use setval* over setval for graalvm.
-           ;; since the specs are dynamic, I don't think there's any benefit to the
-           ;; macro anyway
            (let [data (spec/setval* (component/path->spec path) v
                                     (d/pull @conn query eid))]
              ;; (prn "set new data" path v)
@@ -85,10 +90,6 @@
          :delete
          (let [[path] args
                entity (spec/select-one* (component/path->spec path) (d/pull @conn query eid))]
-           ;; use setval* over setval for graalvm.
-           ;; since the specs are dynamic, I don't think there's any benefit to the
-           ;; macro anyway
-           (prn "trying to delete" path entity)
            (when-let [eid (:db/id entity)]
              (d/transact! conn [[:db.fn/retractEntity eid]]))
            
@@ -108,17 +109,18 @@
                      meta
                      :arglists
                      first)
-         m (second arglist)
+         m (first arglist)
          arg-names (disj (set (:keys m))
                          'extra
                          'context)
          defaults (:or m)
          top-level (fn []
-                     (component/top-level-ui :state (d/pull @conn query root-id) :$state []
-                                             :body ui-var
-                                             :arg-names arg-names
-                                             :defaults defaults
-                                             :handler handler))]
+                     (component/top-level-ui {:state (d/pull @conn query root-id)
+                                              :$state []
+                                              :body ui-var
+                                              :arg-names arg-names
+                                              :defaults defaults
+                                              :handler handler}))]
      top-level)))
 
 (comment
@@ -129,12 +131,19 @@
                       1)))
 
 (comment
-  (skia/run (make-app #'my-todo-app (make-data-script-handler
-                                     {:todo {:complete? false
-                                             :description "asdfsa"}}))))
+  )
 
 
+(defn -main
+  "I don't do a whole lot ... yet."
+  [& args]
 
+  (skia/run (make-app #'my-todo-app conn [{:todo-lists [:db/id
+                                                        {:todos [:complete? :description :db/id]}]}
+                                          '*]
+                      1))
+
+  )
 
 
 
