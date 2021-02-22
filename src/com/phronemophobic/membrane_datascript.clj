@@ -121,11 +121,12 @@
                                              :handler handler))]
      top-level)))
 
-(skia/run (make-app #'my-todo-app conn [{:todo-lists [:db/id
-                                                      {:todos [:complete? :description :db/id]}]}
+(comment
+  (skia/run (make-app #'my-todo-app conn [{:todo-lists [:db/id
+                                                        {:todos [:complete? :description :db/id]}]}
                                         
-                                        '*]
-                    1))
+                                          '*]
+                      1)))
 
 (comment
   (skia/run (make-app #'my-todo-app (make-data-script-handler
