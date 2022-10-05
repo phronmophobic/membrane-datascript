@@ -64,6 +64,8 @@
   (let []
     (fn dispatch!
       ([] nil)
+      ([intents]
+       (run! #(apply dispatch! %) intents))
       ([type & args]
        (case type
          :update

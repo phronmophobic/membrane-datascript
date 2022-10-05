@@ -74,6 +74,8 @@
   (let []
     (fn dispatch!
       ([] nil)
+      ([effects]
+       (run! #(apply dispatch! %) effects))
       ([type & args]
        (case type
          :update
@@ -115,22 +117,13 @@
   ([ui-var conn query root-id]
    (let [
          handler (make-datascript-handler conn query root-id)
-         arglist (-> ui-var
-                     meta
-                     :arglists
-                     first)
-         m (first arglist)
-         arg-names (disj (set (:keys m))
-                         'extra
-                         'context)
-         defaults (:or m)
+
+         top-ui (component/ui-var->top-level-ui ui-var)
+         top-ui (assoc top-ui :handler handler)
+
          top-level (fn []
-                     (component/top-level-ui {:state (d/pull @conn query root-id)
-                                              :$state []
-                                              :body ui-var
-                                              :arg-names arg-names
-                                              :defaults defaults
-                                              :handler handler}))]
+                     (assoc top-ui
+                            :state (d/pull @conn query root-id)))]
      top-level)))
 
 (comment
